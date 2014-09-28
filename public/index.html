@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="menuPlanner" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Menu Planner</title>
+  <meta name="description" content="Eat well at home">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bower_components/html5-boilerplate/css/normalize.css">
+  <link rel="stylesheet" href="bower_components/html5-boilerplate/css/main.css">
+  <link rel="stylesheet" href="app.css"/>
+  <script src="bower_components/html5-boilerplate/js/vendor/modernizr-2.6.2.min.js"></script>
+</head>
+<body>
+
+  <div class="mp-header">
+    <h1 class="brand"><a href="/">MP</a></h1>
+    <div class="week-summary" ng-controller="WeekdayController">
+      <h2>Week of {{startOfWeek | date: 'MMM d'}} - {{endOfWeek | date: 'MMM d'}}</h2>
+    </div>
+  </div>
+
+  <div class="workspace">
+
+    <div class="timeline" ng-controller="WeekdayController">
+      <ul>
+        <li class="day-col" ng-repeat="day in weekdays">{{day}}</li>
+      </ul>
+    </div>
+
+    <div class="meal-cards" ng-controller="MealCardsController">
+      <div class="meal-type-row" ng-repeat="mealType in mealTypes">
+        <div class="day-col" ng-repeat="card in mealCards">
+
+          <div class="add-meal-card" ng-show="!showCard(card, mealType)">
+            <ul>
+              <li><a href="#" ng-click="createCard(card, mealType)">+ New {{mealType.name}}</a></li>
+              <li><a href="#" ng-click="copyCard(card, mealType)">+ Repeat {{mealType.name}}</a></li>
+          </div>
+
+          <meal-card></meal-card>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="bower_components/lodash/dist/lodash.js"></script>
+  <script src="bower_components/angular/angular.js"></script>
+  <script src="bower_components/angular-route/angular-route.js"></script>
+  <script src="app.js"></script>
+  <script src="services.js"></script>
+  <script src="directives.js"></script>
+  <script src="controllers.js"></script>
+</body>
+</html>
