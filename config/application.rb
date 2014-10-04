@@ -19,5 +19,10 @@ module MenuPlanner
     # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
+
+    # prevents rails from converting { "foo": [] } to { "foo": nil }
+    # https://github.com/rails/rails/issues/13420
+    # https://github.com/rails/rails/pull/13188
+    config.action_dispatch.perform_deep_munge = false
   end
 end

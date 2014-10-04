@@ -1,3 +1,10 @@
 Rails.application.routes.draw do
-  # root to: 'app#show'
+
+  namespace :api do
+    namespace :v1 do
+      resources :meal_cards
+      resources :weeks
+    end
+  end
+
 end
