@@ -2,6 +2,7 @@
 
 var app = angular.module('menuPlanner', [
   'ngRoute',
+  'restangular',
   'mpServices',
   'mpDirectives',
   'mpControllers'

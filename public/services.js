@@ -10,7 +10,17 @@ angular.module('mpServices',[])
   };
 })
 
-.factory('mealCardCollection', function() {
+.factory('MPWeeks', ['Restangular', function(Restangular) {
+  return Restangular.withConfig(function(config) {
+    config.setBaseUrl('http://localhost:3000/api/v1');
+    config.setDefaultHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    });
+  }).all('weeks');
+}])
+
+.factory('mealCardCollection', ['MPWeeks', function(MPWeeks) {
   var MealCard = function(day, meals) {
     this.day = day;
     this.meals = meals || {};
@@ -47,5 +57,17 @@ angular.module('mpServices',[])
     }
   };
 
-  return new MealCardCollection;
-})
+  var collection = new MealCardCollection;
+
+  MPWeeks.get('current').then(function(data) {
+    _.each(data.meal_cards, function(mc) {
+      var d = new Date(mc.date);
+      d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+      mc.day = d.getDay();
+      var c = _.find(collection.mealCards, function(card) { return card.day == mc.day; });
+      c.meals = mc.meals;
+    });
+  });
+
+  return collection;
+}])
