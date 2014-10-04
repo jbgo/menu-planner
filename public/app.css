@@ -35,6 +35,7 @@ body {
 .workspace {
   width: 100%;
   overflow: scroll;
+  clear: both;
   margin-left: -1px; }
 
 
