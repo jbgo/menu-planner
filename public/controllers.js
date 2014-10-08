@@ -47,6 +47,7 @@ angular.module('mpControllers',[])
     $scope.disableEditing = function(item, $event) {
       if (!$event || ($event && $event.keyCode === 13)) {
         item.editable = item.hasFocus = false;
+        $scope.card.save();
       }
     };
 
@@ -57,11 +58,13 @@ angular.module('mpControllers',[])
       if (shouldAddNewItem) {
         $scope.menuItems().push({ name: $scope.newItem.trim() });
         $scope.newItem = null;
+        $scope.card.save();
       }
     };
 
     $scope.removeItem = function(item) {
       var menuItems = $scope.menuItems();
       menuItems.splice(menuItems.indexOf(item), 1);
+      $scope.card.save();
     };
   }])
