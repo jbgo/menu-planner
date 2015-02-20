@@ -1,43 +1,3 @@
-window.MP = {};
-
-MP.weekdays = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday'
-];
-
-MP.mealTypes = [
-  { name: 'Breakfast', bgColor: '2653B6' },
-  { name: 'Lunch', bgColor: '0FAC92' },
-  { name: 'Dinner', bgColor: 'B9750E' }
-];
-
-MP.Dispatcher = function() {};
-_.extend(MP.Dispatcher.prototype, Backbone.Events);
-MP.dispatcher = new MP.Dispatcher();
-
-MP.MealCard = Backbone.Model.extend({
-  urlRoot: '/api/v1/meal_cards',
-
-  parse: function(response, options) {
-    var d = new Date(response.date);
-    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-
-    return _.extend(response, {
-      day: d.getDay()
-    });
-  }
-});
-
-MP.MealCards = Backbone.Collection.extend({
-  url: '/api/v1/meal_cards',
-  model: MP.MealCard
-});
-
 var MenuPlan = React.createClass({
   render: function() {
     return (
@@ -51,8 +11,8 @@ var MenuPlan = React.createClass({
 
 var MenuHeader = React.createClass({
   render: function() {
-    var startDay = 'Feb 15';
-    var endDay = 'Feb 21';
+    var startDay = MP.startOfWeek();
+    var endDay = MP.endOfWeek();
 
     return (
       <div className="mp-header">
@@ -94,11 +54,7 @@ var MealCardList = React.createClass({
   render: function() {
     var _this = this;
 
-    var mealCardsByDay = _.object(_.compact(
-      MP.mealCards.map(function(card) {
-        return [card.get('day'), card];
-      })
-    ));
+    var mealCardsByDay = this.props.mealCards.byDay();
 
     var mealTypeRows = MP.mealTypes.map(function(mealType) {
       return <MealTypeRow key={mealType.name} mealType={mealType} mealCardsByDay={mealCardsByDay} />;
@@ -115,7 +71,7 @@ var MealCardList = React.createClass({
 var MealTypeRow = React.createClass({
   render: function() {
     var _this = this;
-    var mealCardContainers = [0, 1, 2, 3, 4, 5, 6].map(function(day) {
+    var mealCardContainers = MP.weekdayNumbers.map(function(day) {
       return <MealCardContainer key={day} day={day} mealType={_this.props.mealType} mealCard={_this.props.mealCardsByDay[day]} />;
     });
 
@@ -130,30 +86,7 @@ var MealTypeRow = React.createClass({
 var MealCardContainer = React.createClass({
   addCard: function(e) {
     e.preventDefault();
-
-    if (this.props.mealCard) {
-      var meals = this.props.mealCard.get('meals');
-      meals[this.props.mealType.name] = [];
-      this.props.mealCard.save({ meals: meals }, { success: renderMenu });
-    } else {
-      var meals = {};
-      meals[this.props.mealType.name] = [];
-      MP.mealCards.create({ date: this.getDateForCard(), meals: meals }, { success: renderMenu });
-    }
-  },
-
-  getDateForCard: function() {
-    var date, month, d;
-    date = new Date();
-    date.setDate(date.getDate() + (this.props.day - date.getDay()));
-    month = date.getMonth() + 1;
-    d = date.getDate();
-
-    return [
-      date.getFullYear(),
-      (month < 10 ? "0"+month : month),
-      (d < 10 ? "0"+d : d)
-    ].join('-');
+    MP.dispatch('addMealCard', this.props.day, this.props.mealType);
   },
 
   render: function() {
@@ -190,9 +123,7 @@ var MealCardContainer = React.createClass({
 var MealCard = React.createClass({
   removeCard: function(e) {
     e.preventDefault();
-    var meals = this.props.mealCard.get('meals');
-    delete meals[this.props.mealType.name];
-    this.props.mealCard.save({ meals: meals }, { success: renderMenu })
+    MP.dispatch('deleteMealCard', this.props.mealCard, this.props.mealType);
   },
 
   render: function() {
@@ -240,23 +171,9 @@ var MenuItem = React.createClass({
 
   doneEditing: function(e) {
     var _this = this;
+    var oldValue = (this.props.meal && this.props.meal.name);
     var newValue = this.refs.menuItemName.getDOMNode().value;
-    console.info('doneEditing:', newValue);
-
-    // TODO - this is a really shitty data model,
-    // it's a lot of work just for a simple update
-    var meals = this.props.mealCard.get('meals');
-    var possibleMeals = meals[this.props.mealType.name];
-    if (this.props.meal) {
-      var meal = _.find(possibleMeals, function(meal) {
-        return meal.name === _this.props.meal.name
-      });
-      meal.name = newValue;
-    } else {
-      possibleMeals.push({ name: newValue });
-    }
-    this.props.mealCard.save({ meals: meals }, { success: renderMenu });
-
+    MP.dispatch('editMenuItem', this.props.mealCard, this.props.mealType, oldValue, newValue);
     this.setState({ editable: false });
   },
 
@@ -289,16 +206,3 @@ var MenuItem = React.createClass({
     return menuItem;
   }
 });
-
-function renderMenu(mealCards) {
-  console.info('mealCards', mealCards);
-  React.render(
-    <MenuPlan mealCards={mealCards} />,
-    document.getElementById('menu-plan')
-  );
-}
-
-MP.mealCards = new MP.MealCards();
-renderMenu(MP.mealCards);
-MP.mealCards.on('sync', renderMenu);
-MP.mealCards.fetch();
