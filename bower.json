@@ -1,16 +1,14 @@
 {
-  "name": "angular-seed",
-  "description": "A starter project for AngularJS",
+  "name": "menu-planner",
+  "description": "Know what you're going to eat",
   "version": "0.0.0",
-  "homepage": "https://github.com/angular/angular-seed",
-  "license": "MIT",
+  "homepage": "https://github.com/jbgo/menu-planner",
+  "license": "n/a",
   "private": true,
   "dependencies": {
-    "angular": "1.2.x",
-    "angular-route": "1.2.x",
-    "angular-loader": "1.2.x",
-    "angular-mocks": "~1.2.x",
-    "html5-boilerplate": "~4.3.0",
-    "lodash": "~2.4.1"
+    "jquery": "~2.1.3",
+    "node-uuid": "~1.4.2",
+    "react": "~0.12.2",
+    "backbone": "~1.1.2"
   }
 }
