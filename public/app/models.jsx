@@ -6,10 +6,14 @@ MP.weekdayNumbers = [0, 1, 2, 3, 4, 5, 6];
 MP.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 MP.mealTypes = [
-  { name: 'Breakfast', bgColor: '2653B6' },
-  { name: 'Lunch', bgColor: '0FAC92' },
-  { name: 'Dinner', bgColor: 'B9750E' }
+  { name: 'Breakfast', enumValue: 'breakfast', bgColor: '#2653B6' },
+  { name: 'Lunch',     enumValue: 'lunch',     bgColor: '#0FAC92' },
+  { name: 'Dinner',    enumValue: 'dinner',    bgColor: '#B9750E' }
 ];
+
+MP.mealTypeLookup = _.object(_.map(MP.mealTypes, function(t) {
+  return [t.enumValue, t];
+}));
 
 
 MP.formatDate = function(date) {
@@ -43,81 +47,59 @@ MP.getDateForDay = function(day) {
   ].join('-');
 };
 
-MP.MealCard = Backbone.Model.extend({
-  urlRoot: '/api/v1/meal_cards',
+MP.Meal = Backbone.Model.extend({
+  urlRoot: '/meals',
+
+  initialize: function() {
+    this.on('change:id', this.setMenuItemUrl);
+  },
+
+  setMenuItems: function(models) {
+    this.menuItems = new MP.MenuItemCollection();
+    this.menuItems.reset(models || []);
+    this.listenTo(this.menuItems, 'remove', function() { this.trigger('change', this); });
+  },
+
+  setMenuItemUrl: function(model, id) {
+    if (this.menuItems) {
+      this.menuItems.url = '/meals/' + id + '/menu_items';
+    }
+  },
+
+  getMealType: function() {
+    return MP.mealTypeLookup[this.get('meal_type')];
+  },
 
   parse: function(response, options) {
     var d = new Date(response.date);
     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-
-    return _.extend(response, {
-      day: d.getDay()
-    });
-  },
-
-  getMenuItemsForMealType: function(mealType) {
-    return this.get('meals')[mealType.name];
-  },
-
-  removeMealType: function(mealType) {
-    var meals = this.get('meals');
-    delete meals[mealType.name];
-    if (_.isEmpty(meals)) {
-      this.destroy();
-    } else {
-      this.save();
-    }
-  },
-
-  editMenuItem: function(mealType, oldValue, newValue) {
-    var menuItems = this.getMenuItemsForMealType(mealType);
-    var item = _.find(menuItems, function(item) {
-      return item.name === oldValue;
-    });
-
-    if (item) {
-      item.name = newValue;
-    } else {
-      menuItems.push({ name: newValue });
-    }
-
-    this.save();
-  },
-
-  deleteMenuItem: function(mealType, menuItem) {
-    var menuItems = this.getMenuItemsForMealType(mealType);
-    var index = _.findIndex(menuItems, function(item) {
-      return item.name === menuItem.name;
-    });
-    menuItems.splice(index, 1);
-    this.save();
+    this.setMenuItems(response.menu_items);
+    this.setMenuItemUrl(null, response.id);
+    return _.extend(response, { day: d.getDay() });
   }
 });
 
-MP.MealCardCollection = Backbone.Collection.extend({
-  url: '/api/v1/meal_cards',
-  model: MP.MealCard,
+MP.MealCollection = Backbone.Collection.extend({
+  url: '/meals',
+  model: MP.Meal,
 
   byDay: function() {
-    var mealCardsByDay = this.map(function(mealCard) {
-      return [mealCard.get('day'), mealCard];
+    var mealsByDay = {};
+    var day;
+
+    this.each(function(meal) {
+      day = meal.get('day');
+      if (!mealsByDay[day]) { mealsByDay[day] = []; }
+      mealsByDay[day].push(meal);
     });
 
-    return _.object(_.compact(mealCardsByDay));
-  },
-
-  addMealCard: function(day, mealType) {
-    var mealCard = this.findWhere({ day: day });
-    var meals;
-
-    if (mealCard) {
-      meals = mealCard.get('meals');
-      meals[mealType.name] = meals[mealType.name] || [];
-      mealCard.save({ meals: meals });
-    } else {
-      meals = {};
-      meals[mealType.name] = [];
-      this.create({ date: MP.getDateForDay(day), meals: meals });
-    }
+    return mealsByDay;
   }
+});
+
+MP.MenuItem = Backbone.Model.extend({
+});
+
+MP.MenuItemCollection = Backbone.Collection.extend({
+  model: MP.MenuItem
 });

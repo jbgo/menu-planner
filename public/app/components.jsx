@@ -3,7 +3,7 @@ var MenuPlan = React.createClass({
     return (
       <div id="menu">
         <MenuHeader />
-        <MenuWorkspace mealCards={this.props.mealCards} />
+        <MenuWorkspace meals={this.props.meals} />
       </div>
     );
   }
@@ -30,7 +30,7 @@ var MenuWorkspace = React.createClass({
     return (
       <div className="workspace">
         <Timeline />
-        <MealCardList mealCards={this.props.mealCards}/>
+        <MealCardList meals={this.props.meals}/>
       </div>
     );
   }
@@ -54,10 +54,11 @@ var MealCardList = React.createClass({
   render: function() {
     var _this = this;
 
-    var mealCardsByDay = this.props.mealCards.byDay();
+    var meals = this.props.meals;
+    var mealsByDay = this.props.meals.byDay();
 
     var mealTypeRows = MP.mealTypes.map(function(mealType) {
-      return <MealTypeRow key={mealType.name} mealType={mealType} mealCardsByDay={mealCardsByDay} />;
+      return <MealTypeRow key={mealType.name} mealType={mealType} meals={meals} mealsByDay={mealsByDay} />;
     });
 
     return (
@@ -71,8 +72,15 @@ var MealCardList = React.createClass({
 var MealTypeRow = React.createClass({
   render: function() {
     var _this = this;
+    var mealType = this.props.mealType;
+
     var mealCardContainers = MP.weekdayNumbers.map(function(day) {
-      return <MealCardContainer key={day} day={day} mealType={_this.props.mealType} mealCard={_this.props.mealCardsByDay[day]} />;
+      var meals, meal;
+      meals = _this.props.mealsByDay[day];
+      if (meals) {
+        meal = _.find(meals, function(m) { return m.get('meal_type') === mealType.enumValue });
+      }
+      return <MealCardContainer key={day} day={day} meals={_this.props.meals} mealType={mealType} meal={meal} />;
     });
 
     return (
@@ -86,28 +94,28 @@ var MealTypeRow = React.createClass({
 var MealCardContainer = React.createClass({
   addCard: function(e) {
     e.preventDefault();
-    MP.dispatch('addMealCard', this.props.day, this.props.mealType);
+    this.props.meals.create({
+      date: MP.getDateForDay(this.props.day),
+      meal_type: this.props.mealType.enumValue
+    });
   },
 
   render: function() {
     var mealCardContainer;
-    var meals;
-    
-    if (this.props.mealCard) {
-      meals = this.props.mealCard.get('meals')[this.props.mealType.name];
-    }
 
-    if (meals) {
+    
+    if (this.props.meal) {
       mealCardContainer = (
-        <MealCard mealType={this.props.mealType} mealCard={this.props.mealCard} meals={meals} />
+        <MealCard meal={this.props.meal} />
       );
     } else {
       mealCardContainer = (
         <div className="add-meal-card">
-          <ul>
-            <li><a href="#" className="create-meal-card" onClick={this.addCard}>+ New {this.props.mealType.name}</a></li>
-            <li><a href="#" className="copy-meal-card">+ Repeat {this.props.mealType.name}</a></li>
-          </ul>
+          <ul><li>
+            <a href="#" className="create-meal-card" onClick={this.addCard}>
+              + New {this.props.mealType.name}
+            </a>
+          </li></ul>
         </div>
       );
     }
@@ -121,28 +129,41 @@ var MealCardContainer = React.createClass({
 });
 
 var MealCard = React.createClass({
-  removeCard: function(e) {
+  getInitialState: function() {
+    return { wasEdited: false };
+  },
+
+  remove: function(e) {
     e.preventDefault();
-    MP.dispatch('deleteMealCard', this.props.mealCard, this.props.mealType);
+    this.props.meal.destroy();
+  },
+
+  onChildEdit: function(child) {
+    this.setState({ wasEdited: true });
   },
 
   render: function() {
     var _this = this;
+    var meal = this.props.meal;
 
-    var menuItems = this.props.meals.map(function(meal) {
-      return <MenuItem key={meal.name} mealType={_this.props.mealType} mealCard={_this.props.mealCard} meal={meal} />;
+    var menuItems = meal.menuItems.map(function(menuItem) {
+      return (
+        <MenuItem key={menuItem.id} meal={meal} menuItem={menuItem} onEdit={_this.onChildEdit} />
+      );
     });
 
     // add a blank item for appending to the list
     menuItems.push(
-      <MenuItem key={uuid.v4()} mealType={this.props.mealType} mealCard={this.props.mealCard} />
+      <MenuItem key={uuid.v4()} meal={meal} onEdit={this.onChildEdit} focus={this.state.wasEdited} />
     );
+
+    var styles = { backgroundColor: this.props.meal.getMealType().bgColor };
 
     return (
       <div className="meal-card">
-        <div className="meal-card-header" title="Drag to move" style={{ bgColor: this.props.mealType.bgColor }}>
-          <span className="meal-card-close" title="Remove" onClick={this.removeCard}>&times;</span>
-          {this.props.mealType.name}
+        <div className="meal-card-header" title="Drag to move" style={styles}>
+          <span className="meal-card-close" title="Remove" onClick={this.remove}>&times;</span>
+          {meal.getMealType().name}
         </div>
 
         <ul>{menuItems}</ul>
@@ -157,15 +178,15 @@ var MenuItem = React.createClass({
   },
 
   makeEditable: function(e) {
-    e.preventDefault();
+    if (e) { e.preventDefault(); }
     this.setState({ editable: true }, function() {
       $(this.getDOMNode()).find('input').focus().select();
     });
   },
 
-  removeItem: function(e) {
+  remove: function(e) {
     e.preventDefault();
-    MP.dispatch('deleteMenuItem', this.props.mealCard, this.props.mealType, this.props.meal);
+    this.props.menuItem.destroy();
   },
 
   handleKeyUp: function(e) {
@@ -175,39 +196,53 @@ var MenuItem = React.createClass({
   },
 
   doneEditing: function(e) {
-    var _this = this;
-    var oldValue = (this.props.meal && this.props.meal.name);
+    var meal = this.props.meal;
+    var menuItem = this.props.menuItem;
     var newValue = this.refs.menuItemName.getDOMNode().value;
-    MP.dispatch('editMenuItem', this.props.mealCard, this.props.mealType, oldValue, newValue);
+    if (!menuItem && newValue.trim() === '') return; // Don't save new blank items
+
+    if (menuItem) {
+      menuItem.save({ name: newValue });
+    } else if (newValue.trim() !== "") {
+      meal.menuItems.create({ name: newValue });
+    }
+
     this.setState({ editable: false });
+    this.props.onEdit(this);
+  },
+
+  componentDidUpdate: function() {
+    if (this.props.focus) {
+      $(this.getDOMNode()).find('input').focus().select();
+    }
   },
 
   render: function() {
-    var meal = this.props.meal;
-    var isNew = !meal;
-    var menuItem;
+    var menuItem = this.props.menuItem;
+    var isNew = !menuItem;
+    var el;
 
     if (this.state.editable || isNew) {
-      menuItem = (
+      el = (
         <li className="editing">
           <input type="text" ref="menuItemName"
-            defaultValue={isNew ? null : meal.name}
+            defaultValue={isNew ? null : menuItem.get('name')}
             placeholder="Add item..."
             onKeyUp={this.handleKeyUp}
             onBlur={this.doneEditing} />
         </li>
       );
     } else {
-      menuItem = (
+      el = (
         <li title="Edit">
           <div className="display">
-            <span className="remove-item" title="Remove" onClick={this.removeItem}>&times;</span>
-            <span onClick={this.makeEditable}>{meal.name}</span>
+            <span className="remove-item" title="Remove" onClick={this.remove}>&times;</span>
+            <span onClick={this.makeEditable}>{menuItem.get('name')}</span>
           </div>
         </li>
       );
     }
 
-    return menuItem;
+    return el;
   }
 });

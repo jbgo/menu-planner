@@ -1,10 +1,7 @@
 Rails.application.routes.draw do
 
-  namespace :api do
-    namespace :v1 do
-      resources :meal_cards
-      resources :weeks
-    end
+  resources :meals do
+    resources :menu_items
   end
 
 end

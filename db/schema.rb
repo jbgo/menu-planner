@@ -11,16 +11,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140928045553) do
+ActiveRecord::Schema.define(version: 20150221173127) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "meal_cards", force: true do |t|
+  create_table "meals", force: :cascade do |t|
     t.date     "date"
-    t.json     "meals"
+    t.integer  "meal_type"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
+  create_table "menu_items", force: :cascade do |t|
+    t.integer  "meal_id"
+    t.string   "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_foreign_key "menu_items", "meals"
 end
