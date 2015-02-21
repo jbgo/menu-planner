@@ -16,7 +16,6 @@ MP.Dispatcher = Backbone.View.extend({
     this.mealCards.on('remove', this.render);
     this.mealCards.fetch();
 
-    this.on('addMenuItem',    this.addMenuItem);
     this.on('editMenuItem',   this.editMenuItem);
     this.on('deleteMenuItem', this.deleteMenuItem);
 
@@ -32,14 +31,12 @@ MP.Dispatcher = Backbone.View.extend({
     React.render(<MenuPlan mealCards={this.mealCards} />, this.el);
   },
 
-  addMenuItem: function(day, mealType, data) {
-  },
-
   editMenuItem: function(mealCard, mealType, oldValue, newValue) {
     mealCard.editMenuItem(mealType, oldValue, newValue);
   },
 
-  deleteMenuItem: function(day, mealType, data) {
+  deleteMenuItem: function(mealCard, mealType, menuItem) {
+    mealCard.deleteMenuItem(mealType, menuItem);
   },
 
   addMealCard: function(day, mealType) {

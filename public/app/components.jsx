@@ -163,6 +163,11 @@ var MenuItem = React.createClass({
     });
   },
 
+  removeItem: function(e) {
+    e.preventDefault();
+    MP.dispatch('deleteMenuItem', this.props.mealCard, this.props.mealType, this.props.meal);
+  },
+
   handleKeyUp: function(e) {
     if (e.keyCode === 13) { // enter
       this.doneEditing();
@@ -194,10 +199,10 @@ var MenuItem = React.createClass({
       );
     } else {
       menuItem = (
-        <li title="Edit" onClick={this.makeEditable}>
+        <li title="Edit">
           <div className="display">
-            <span className="remove-item" title="Remove">&times;</span>
-            {meal.name}
+            <span className="remove-item" title="Remove" onClick={this.removeItem}>&times;</span>
+            <span onClick={this.makeEditable}>{meal.name}</span>
           </div>
         </li>
       );

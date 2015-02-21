@@ -55,30 +55,42 @@ MP.MealCard = Backbone.Model.extend({
     });
   },
 
+  getMenuItemsForMealType: function(mealType) {
+    return this.get('meals')[mealType.name];
+  },
+
   removeMealType: function(mealType) {
     var meals = this.get('meals');
     delete meals[mealType.name];
     if (_.isEmpty(meals)) {
       this.destroy();
     } else {
-      this.save({ meals: meals });
+      this.save();
     }
   },
 
   editMenuItem: function(mealType, oldValue, newValue) {
-    var meals = this.get('meals');
-    var mealsForType = meals[mealType.name];
-    var meal = _.find(mealsForType, function(meal) {
-      return meal.name === oldValue;
+    var menuItems = this.getMenuItemsForMealType(mealType);
+    var item = _.find(menuItems, function(item) {
+      return item.name === oldValue;
     });
 
-    if (meal) {
-      meal.name = newValue;
+    if (item) {
+      item.name = newValue;
     } else {
-      mealsForType.push({ name: newValue });
+      menuItems.push({ name: newValue });
     }
 
-    this.save({ meals: meals });
+    this.save();
+  },
+
+  deleteMenuItem: function(mealType, menuItem) {
+    var menuItems = this.getMenuItemsForMealType(mealType);
+    var index = _.findIndex(menuItems, function(item) {
+      return item.name === menuItem.name;
+    });
+    menuItems.splice(index, 1);
+    this.save();
   }
 });
 
