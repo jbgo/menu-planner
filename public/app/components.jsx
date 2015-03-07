@@ -195,12 +195,17 @@ var MenuItem = React.createClass({
     }
   },
 
+  handleEdit: function() {
+    this.setState({ editable: false });
+    this.props.onEdit(this);
+  },
+
   render: function() {
     var menuItem = this.props.menuItem;
     var el;
 
     if (this.state.editable || !menuItem) {
-      el = <EditableMenuItem meal={this.props.meal} menuItem={menuItem} onEdit={this.props.onEdit} />;
+      el = <EditableMenuItem meal={this.props.meal} menuItem={menuItem} onEdit={this.handleEdit} />;
     } else {
       el = (
         <li title="Edit">
@@ -235,8 +240,11 @@ var EditableMenuItem = React.createClass({
       meal.menuItems.create({ name: newValue });
     }
 
-    this.setState({ editable: false });
     this.props.onEdit(this);
+  },
+
+  componentDidMount: function() {
+    $(this.getDOMNode()).find('input').focus();
   },
 
   render: function() {
