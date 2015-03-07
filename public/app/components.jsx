@@ -189,6 +189,34 @@ var MenuItem = React.createClass({
     this.props.menuItem.destroy();
   },
 
+  componentDidUpdate: function() {
+    if (this.props.focus) {
+      $(this.getDOMNode()).find('input').focus().select();
+    }
+  },
+
+  render: function() {
+    var menuItem = this.props.menuItem;
+    var el;
+
+    if (this.state.editable || !menuItem) {
+      el = <EditableMenuItem meal={this.props.meal} menuItem={menuItem} onEdit={this.props.onEdit} />;
+    } else {
+      el = (
+        <li title="Edit">
+          <div className="display">
+            <span className="remove-item" title="Remove" onClick={this.remove}>&times;</span>
+            <span onClick={this.makeEditable}>{menuItem.get('name')}</span>
+          </div>
+        </li>
+      );
+    }
+
+    return el;
+  }
+});
+
+var EditableMenuItem = React.createClass({
   handleKeyUp: function(e) {
     if (e.keyCode === 13) { // enter
       this.doneEditing();
@@ -211,38 +239,17 @@ var MenuItem = React.createClass({
     this.props.onEdit(this);
   },
 
-  componentDidUpdate: function() {
-    if (this.props.focus) {
-      $(this.getDOMNode()).find('input').focus().select();
-    }
-  },
-
   render: function() {
     var menuItem = this.props.menuItem;
-    var isNew = !menuItem;
-    var el;
 
-    if (this.state.editable || isNew) {
-      el = (
-        <li className="editing">
-          <input type="text" ref="menuItemName"
-            defaultValue={isNew ? null : menuItem.get('name')}
-            placeholder="Add item..."
-            onKeyUp={this.handleKeyUp}
-            onBlur={this.doneEditing} />
-        </li>
-      );
-    } else {
-      el = (
-        <li title="Edit">
-          <div className="display">
-            <span className="remove-item" title="Remove" onClick={this.remove}>&times;</span>
-            <span onClick={this.makeEditable}>{menuItem.get('name')}</span>
-          </div>
-        </li>
-      );
-    }
-
-    return el;
-  }
+    return (
+      <li className="editing">
+        <input type="text" ref="menuItemName"
+          defaultValue={menuItem ? menuItem.get('name') : null}
+          placeholder="Add item..."
+          onKeyUp={this.handleKeyUp}
+          onBlur={this.doneEditing} />
+      </li>
+    );
+  },
 });
