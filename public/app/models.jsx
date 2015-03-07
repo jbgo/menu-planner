@@ -48,22 +48,18 @@ MP.getDateForDay = function(day) {
 };
 
 MP.Meal = Backbone.Model.extend({
-  urlRoot: '/meals',
-
   initialize: function() {
-    this.on('change:id', this.setMenuItemUrl);
+    if (!this.id) { this.set({ id: uuid.v4() }); }
+    this.fetchMenuItems();
+    this.listenTo(this.menuItems, 'remove', function() {
+      this.trigger('change', this);
+    });
   },
 
-  setMenuItems: function(models) {
-    this.menuItems = new MP.MenuItemCollection();
-    this.menuItems.reset(models || []);
-    this.listenTo(this.menuItems, 'remove', function() { this.trigger('change', this); });
-  },
-
-  setMenuItemUrl: function(model, id) {
-    if (this.menuItems) {
-      this.menuItems.url = '/meals/' + id + '/menu_items';
-    }
+  fetchMenuItems: function() {
+    if (!this.menuItems) { this.menuItems = new MP.MenuItemCollection(); }
+    this.menuItems.localStorage = new Backbone.LocalStorage("menu-items-" + this.id);
+    this.menuItems.fetch();
   },
 
   getMealType: function() {
@@ -73,15 +69,13 @@ MP.Meal = Backbone.Model.extend({
   parse: function(response, options) {
     var d = new Date(response.date);
     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-    this.setMenuItems(response.menu_items);
-    this.setMenuItemUrl(null, response.id);
     return _.extend(response, { day: d.getDay() });
   }
 });
 
 MP.MealCollection = Backbone.Collection.extend({
-  url: '/meals',
   model: MP.Meal,
+  localStorage: new Backbone.LocalStorage("meals"),
 
   byDay: function() {
     var mealsByDay = {};
