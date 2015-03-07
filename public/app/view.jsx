@@ -1,4 +1,4 @@
-MP.Dispatcher = Backbone.View.extend({
+MP.MenuView = Backbone.View.extend({
   el: '#menu-plan',
 
   initialize: function() {
@@ -21,11 +21,9 @@ MP.Dispatcher = Backbone.View.extend({
   },
 
   render: function() {
-    console.info('MP.Dispatcher#render', this);
     var root = React.createElement(MenuPlan, { meals: this.meals });
     React.render(root, this.el);
   }
 });
 
-MP.dispatcher = new MP.Dispatcher();
-MP.dispatch = MP.dispatcher.trigger;
+MP.view = new MP.MenuView();
